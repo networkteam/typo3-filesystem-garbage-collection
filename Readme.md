@@ -15,3 +15,7 @@ Delete files in `fileadmin/_temp_/` when older than `30` days. Remove empty subf
 ```shell
 composer exec typo3 -- cleanup:folder -e 1:/_temp_/ 30
 ```
+
+## Notes
+
+When a recycler folder (a folder named `_recycler_`) exists in any parent folder, then the file will be moved to the recycler folder and **not** really deleted.
