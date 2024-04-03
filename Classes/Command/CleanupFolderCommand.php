@@ -12,6 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\MathUtility;
 
 class CleanupFolderCommand extends Command
 {
@@ -27,11 +28,14 @@ class CleanupFolderCommand extends Command
     {
         $resourceFactory = GeneralUtility::makeInstance(ResourceFactory::class);
         $folder = $resourceFactory->getFolderObjectFromCombinedIdentifier($input->getArgument('folder'));
-        $deleteBefore = time() - ((int)$input->getArgument('days') * 24 * 60 * 60);
+        $maxAgeInDays = $input->getArgument('days');
+        if (!MathUtility::canBeInterpretedAsInteger($maxAgeInDays)) {
+            throw new \InvalidArgumentException('No integer given for days argument', 1712175486);
+        }
+        $deleteBefore = time() - ((int)$maxAgeInDays * 24 * 60 * 60);
 
         foreach ($folder->getFiles(recursive: true) as $file) {
             if ($file->getCreationTime() < $deleteBefore) {
-                $output->writeln('Deleting ' . $file->getIdentifier());
                 $file->delete();
             }
         }
@@ -45,16 +49,17 @@ class CleanupFolderCommand extends Command
         return Command::SUCCESS;
     }
 
-    protected function removeEmptyFolderRecursive(Folder $folder): void
+    protected function removeEmptyFolderRecursive(Folder $folder): bool
     {
         $subFolders = $folder->getSubfolders(filterMode: Folder::FILTER_MODE_NO_FILTERS);
+        foreach ($subFolders as $idx => $subfolder) {
+            if ($this->removeEmptyFolderRecursive($subfolder)) {
+                unset($subFolders[$idx]);
+            }
+        }
         if ($subFolders === [] && $folder->getFiles(filterMode: Folder::FILTER_MODE_NO_FILTERS) === []) {
-            $folder->delete();
-            return;
+            return $folder->delete();
         }
-
-        foreach ($subFolders as $subfolder) {
-            $this->removeEmptyFolderRecursive($subfolder);
-        }
+        return false;
     }
 }
