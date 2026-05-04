@@ -6,7 +6,7 @@
         "GPL-2.0-or-later"
     ],
     "require": {
-        "typo3/cms-core": "^11.5 || ^12.4 || ^13.0",
+        "typo3/cms-core": "^11.5 || ^12.4 || ^13.0 || ^14.0 || dev-main",
         "php": ">=8.0"
     },
     "autoload": {
